@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SearchSession {
+  id               String             @id @default(cuid())
+  query            String
+  queryType        String
+  resultCount      Int                @default(0)
+  /// Serialized JSON platform status summary for this search.
+  platformStatuses String
+  createdAt        DateTime           @default(now())
+  candidates       ProductCandidate[]
+}
+
+model ProductCandidate {
+  id              String        @id @default(cuid())
+  searchSessionId String
+  platform        String
+  externalId      String
+  title           String
+  price           Int
+  currency        String        @default("CNY")
+  shopName        String
+  shopType        String
+  salesCount      Int?
+  rating          Float?
+  reviewCount     Int?
+  productUrl      String
+  imageUrl        String?
+  matchScore      Int
+  trustScore      Int
+  /// Serialized JSON trust reason list.
+  trustReasons    String
+  /// Serialized JSON source metadata.
+  rawMetadata     String
+  collectedAt     DateTime
+  searchSession   SearchSession @relation(fields: [searchSessionId], references: [id], onDelete: Cascade)
+  watches         WatchItem[]
+
+  @@index([searchSessionId])
+  @@index([platform, externalId])
+}
+
+model WatchItem {
+  id                String            @id @default(cuid())
+  sourceCandidateId String?
+  query             String
+  targetPrice       Int
+  checkInterval     Int               @default(3600)
+  enabled           Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  lastCheckedAt     DateTime?
+  sourceCandidate   ProductCandidate? @relation(fields: [sourceCandidateId], references: [id], onDelete: SetNull)
+  snapshots         PriceSnapshot[]
+  alerts            AlertEvent[]
+
+  @@index([sourceCandidateId])
+  @@index([enabled, lastCheckedAt])
+}
+
+model PriceSnapshot {
+  id             String    @id @default(cuid())
+  watchItemId    String
+  platform       String
+  candidateTitle String
+  price          Int
+  currency       String    @default("CNY")
+  productUrl     String
+  trustScore     Int
+  collectedAt    DateTime  @default(now())
+  watchItem      WatchItem @relation(fields: [watchItemId], references: [id], onDelete: Cascade)
+
+  @@index([watchItemId, collectedAt])
+}
+
+model AlertEvent {
+  id           String    @id @default(cuid())
+  watchItemId  String
+  platform     String
+  triggerPrice Int
+  targetPrice  Int
+  productUrl   String
+  triggeredAt  DateTime  @default(now())
+  readAt       DateTime?
+  watchItem    WatchItem @relation(fields: [watchItemId], references: [id], onDelete: Cascade)
+
+  @@index([watchItemId, readAt])
+}
+
+model PlatformStatus {
+  platform         String    @id
+  enabled          Boolean   @default(true)
+  lastSuccessAt    DateTime?
+  lastFailureAt    DateTime?
+  lastErrorCode    String?
+  lastErrorMessage String?
+  averageLatencyMs Int?
+}
