@@ -18,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex gap-4 text-sm text-muted">
               <Link href="/">搜索</Link>
+              <Link href="/platforms">平台状态</Link>
               <Link href="/alerts">提醒中心</Link>
             </div>
           </nav>

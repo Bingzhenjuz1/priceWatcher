@@ -3,11 +3,22 @@ import { expect, test } from "@playwright/test";
 test("searches product and creates a price watch", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("商品关键词或链接").fill("iPhone 16 256G");
+  const searchResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/search") && response.request().method() === "POST"
+  );
   await page.getByRole("button", { name: "搜索" }).click();
+  await expect((await searchResponse).status()).toBe(200);
+  await page.waitForURL(/\/search\//);
 
   await expect(page.getByRole("heading", { name: "比价结果" })).toBeVisible();
   await expect(page.getByText("Apple iPhone 16").first()).toBeVisible();
   await expect(page.getByText(/可信度/).first()).toBeVisible();
+  await page.getByRole("link", { name: "平台状态" }).click();
+  await page.waitForURL(/\/platforms/);
+  await expect(page.getByRole("heading", { name: "平台状态" })).toBeVisible();
+  await expect(page.getByText("JD").first()).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "比价结果" })).toBeVisible();
 
   const createWatchResponse = page.waitForResponse(
     (response) => response.url().includes("/api/watches") && response.request().method() === "POST"
