@@ -5,7 +5,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-    passWithNoTests: true
+    passWithNoTests: true,
+    fileParallelism: false,
+    setupFiles: ["tests/setup.ts"]
   },
   resolve: {
     alias: {

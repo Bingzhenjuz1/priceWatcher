@@ -1,4 +1,5 @@
 import { enabledAdapters } from "@/lib/adapters";
+import type { PlatformAdapter } from "@/lib/adapters/platformAdapter";
 import { prisma } from "@/lib/db";
 import { calculateMatchScore } from "@/lib/scoring/matchScore";
 import { rankCandidates } from "@/lib/scoring/rankCandidates";
@@ -62,9 +63,67 @@ function scoreCandidates(query: string, candidates: PlatformCandidate[]): Scored
   );
 }
 
-export async function createSearchSession(query: string) {
-  const adapterResults = await Promise.all(enabledAdapters.map((adapter) => adapter.search(query)));
-  const platformStatuses = adapterResults.map((result) => result.status);
+type AdapterRunResult = {
+  adapter: PlatformAdapter;
+  result: Awaited<ReturnType<PlatformAdapter["search"]>>;
+};
+
+export async function createSearchSession(
+  query: string,
+  adapters: PlatformAdapter[] = enabledAdapters
+) {
+  const settledResults = await Promise.allSettled(
+    adapters.map(async (adapter) => ({
+      adapter,
+      result: await adapter.search(query)
+    }))
+  );
+  const adapterResults = settledResults
+    .filter((settled): settled is PromiseFulfilledResult<AdapterRunResult> => settled.status === "fulfilled")
+    .map((settled) => settled.value.result);
+  const failedStatuses = settledResults.flatMap((settled, index) => {
+    if (settled.status === "fulfilled") {
+      return [];
+    }
+
+    return [
+      {
+        platform: adapters[index].platform,
+        ok: false,
+        latencyMs: 0,
+        errorCode: "ADAPTER_ERROR",
+        errorMessage: settled.reason instanceof Error ? settled.reason.message : "平台获取失败"
+      } satisfies PlatformAdapterStatus
+    ];
+  });
+  const platformStatuses = [
+    ...adapterResults.map((result) => result.status),
+    ...failedStatuses
+  ];
+
+  await Promise.all(
+    platformStatuses.map((status) =>
+      prisma.platformStatus.upsert({
+        where: { platform: status.platform },
+        create: {
+          platform: status.platform,
+          enabled: true,
+          lastSuccessAt: status.ok ? new Date() : undefined,
+          lastFailureAt: status.ok ? undefined : new Date(),
+          lastErrorCode: status.errorCode,
+          lastErrorMessage: status.errorMessage,
+          averageLatencyMs: status.latencyMs
+        },
+        update: {
+          lastSuccessAt: status.ok ? new Date() : undefined,
+          lastFailureAt: status.ok ? undefined : new Date(),
+          lastErrorCode: status.errorCode,
+          lastErrorMessage: status.errorMessage,
+          averageLatencyMs: status.latencyMs
+        }
+      })
+    )
+  );
   const candidates = scoreCandidates(
     query,
     adapterResults.flatMap((result) => result.candidates)

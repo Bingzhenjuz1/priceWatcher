@@ -1,4 +1,5 @@
 import { SearchResults } from "@/components/SearchResults";
+import { PlatformStatusNotice } from "@/components/PlatformStatusNotice";
 import { getSearchSession } from "@/lib/search/searchService";
 import { notFound } from "next/navigation";
 
@@ -14,6 +15,7 @@ export default async function SearchResultsPage({ params }: { params: { id: stri
         <h1 className="text-2xl font-semibold text-ink">比价结果</h1>
         <p className="mt-1 text-sm text-muted">搜索：{session.query}</p>
       </div>
+      <PlatformStatusNotice statuses={session.platformStatuses} />
       <SearchResults query={session.query} candidates={session.candidates} />
     </div>
   );
