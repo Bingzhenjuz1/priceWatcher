@@ -17,6 +17,18 @@ test("searches product and creates a price watch", async ({ page }) => {
   await page.waitForURL(/\/watch\//);
   await expect(page.getByRole("heading", { name: "iPhone 16 256G", exact: true })).toBeVisible();
 
+  const refreshWatchResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/watches/") && response.url().includes("/refresh")
+  );
   await page.getByRole("button", { name: "刷新价格" }).click();
+  await expect((await refreshWatchResponse).status()).toBe(200);
   await expect(page.getByText("提醒记录")).toBeVisible();
+  await expect(page.getByText(/触发/).first()).toBeVisible();
+
+  await page.getByRole("link", { name: "提醒中心" }).click();
+  await page.waitForURL(/\/alerts/);
+  await expect(page.getByRole("heading", { name: "提醒中心" })).toBeVisible();
+  await expect(page.getByText("未读").first()).toBeVisible();
+  await page.getByRole("button", { name: "标记已读" }).first().click();
+  await expect(page.getByText("已读").first()).toBeVisible();
 });
