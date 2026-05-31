@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "node scripts/run-e2e-if-present.mjs",
+    "watches:refresh": "node scripts/refresh-due-watches.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force"

@@ -5,6 +5,7 @@ import {
   getWatch,
   listAlerts,
   markAlertRead,
+  refreshDueWatches,
   refreshWatch,
   updateWatch
 } from "@/lib/watch/watchService";
@@ -45,5 +46,21 @@ describe("watch api service functions", () => {
     const updated = await getWatch(watch.id);
     expect(updated?.targetPrice).toBe(candidate.price - 5000);
     expect(updated?.enabled).toBe(false);
+  });
+
+  it("returns a refresh summary for due watches", async () => {
+    const session = await createSearchSession("iPhone 16 256G");
+    const candidate = session.candidates[0];
+    const watch = await createWatch({
+      sourceCandidateId: candidate.id,
+      query: session.query,
+      targetPrice: candidate.price + 5000
+    });
+
+    const result = await refreshDueWatches({ now: new Date() });
+
+    expect(result.checked).toBeGreaterThan(0);
+    expect(result.refreshedIds).toContain(watch.id);
+    expect(result.failed).toEqual([]);
   });
 });

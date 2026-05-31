@@ -105,6 +105,47 @@ export async function refreshWatch(id: string) {
   });
 }
 
+export type RefreshDueWatchesInput = {
+  now?: Date;
+};
+
+export async function refreshDueWatches(input: RefreshDueWatchesInput = {}) {
+  const now = input.now ?? new Date();
+  const watches = await prisma.watchItem.findMany({
+    where: { enabled: true },
+    orderBy: { createdAt: "asc" }
+  });
+  const dueWatches = watches.filter((watch) => {
+    if (!watch.lastCheckedAt) {
+      return true;
+    }
+
+    const nextCheckAt = watch.lastCheckedAt.getTime() + watch.checkInterval * 1000;
+    return nextCheckAt <= now.getTime();
+  });
+
+  const refreshedIds: string[] = [];
+  const failed: { id: string; error: string }[] = [];
+
+  for (const watch of dueWatches) {
+    try {
+      await refreshWatch(watch.id);
+      refreshedIds.push(watch.id);
+    } catch (error) {
+      failed.push({
+        id: watch.id,
+        error: error instanceof Error ? error.message : "刷新失败"
+      });
+    }
+  }
+
+  return {
+    checked: dueWatches.length,
+    refreshedIds,
+    failed
+  };
+}
+
 export async function listAlerts() {
   return prisma.alertEvent.findMany({
     orderBy: { triggeredAt: "desc" },
