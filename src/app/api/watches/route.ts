@@ -13,7 +13,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = createWatchSchema.safeParse(await request.json());
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ error: "监控参数无效" }, { status: 400 });
+  }
+
+  const body = createWatchSchema.safeParse(json);
   if (!body.success) {
     return NextResponse.json({ error: "监控参数无效" }, { status: 400 });
   }

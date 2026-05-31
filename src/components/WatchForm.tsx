@@ -39,6 +39,7 @@ export function WatchForm({
         className="h-10 w-full rounded-md border border-line px-3"
       />
       <button
+        type="button"
         onClick={createWatch}
         className="h-10 w-full rounded-md bg-ink px-3 text-sm font-medium text-white"
       >
