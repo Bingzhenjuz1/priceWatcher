@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { RefreshWatchButton } from "@/components/RefreshWatchButton";
+import { WatchSettingsForm } from "@/components/WatchSettingsForm";
 import { formatCny } from "@/lib/money";
 import { getWatch } from "@/lib/watch/watchService";
 
@@ -18,10 +19,16 @@ export default async function WatchPage({ params }: { params: { id: string } }) 
         <div>
           <h1 className="text-2xl font-semibold text-ink">{watch.query}</h1>
           <p className="mt-1 text-sm text-muted">目标价 {formatCny(watch.targetPrice)}</p>
+          <p className="mt-1 text-sm text-muted">状态 {watch.enabled ? "监控中" : "已停用"}</p>
           {latest && <p className="mt-1 text-sm text-muted">当前最优价 {formatCny(latest.price)}</p>}
         </div>
         <RefreshWatchButton watchId={params.id} />
       </div>
+      <WatchSettingsForm
+        watchId={params.id}
+        targetPrice={watch.targetPrice}
+        enabled={watch.enabled}
+      />
       <PriceHistoryChart data={watch.snapshots} />
       <section className="rounded-md border border-line bg-white p-4">
         <h2 className="font-semibold">提醒记录</h2>

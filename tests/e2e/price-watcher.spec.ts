@@ -16,6 +16,14 @@ test("searches product and creates a price watch", async ({ page }) => {
   await expect((await createWatchResponse).status()).toBe(201);
   await page.waitForURL(/\/watch\//);
   await expect(page.getByRole("heading", { name: "iPhone 16 256G", exact: true })).toBeVisible();
+  await page.getByLabel("目标价").fill("5500");
+  await page.getByLabel("启用监控").uncheck();
+  await page.getByRole("button", { name: "保存设置" }).click();
+  await expect(page.getByText("状态 已停用")).toBeVisible();
+  await page.getByLabel("目标价").fill("6500");
+  await page.getByLabel("启用监控").check();
+  await page.getByRole("button", { name: "保存设置" }).click();
+  await expect(page.getByText("状态 监控中")).toBeVisible();
 
   const refreshWatchResponse = page.waitForResponse(
     (response) => response.url().includes("/api/watches/") && response.url().includes("/refresh")

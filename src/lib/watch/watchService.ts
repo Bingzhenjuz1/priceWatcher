@@ -7,6 +7,12 @@ export type CreateWatchInput = {
   targetPrice: number;
 };
 
+export type UpdateWatchInput = {
+  targetPrice?: number;
+  enabled?: boolean;
+  checkInterval?: number;
+};
+
 export async function createWatch(input: CreateWatchInput) {
   return prisma.watchItem.create({
     data: {
@@ -33,6 +39,17 @@ export async function getWatch(id: string) {
     include: {
       snapshots: { orderBy: { collectedAt: "asc" } },
       alerts: { orderBy: { triggeredAt: "desc" } }
+    }
+  });
+}
+
+export async function updateWatch(id: string, input: UpdateWatchInput) {
+  return prisma.watchItem.update({
+    where: { id },
+    data: {
+      targetPrice: input.targetPrice,
+      enabled: input.enabled,
+      checkInterval: input.checkInterval
     }
   });
 }
